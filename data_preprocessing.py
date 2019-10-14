@@ -98,18 +98,12 @@ if __name__== "__main__" :
     parser = argparse.ArgumentParser()
     parser.add_argument('--debate_path', type=str, help='Path to dabates xml files.', required=True)
     parser.add_argument('--data_path', type=str, help='Name of folder to which the new instances files should be written.', default='data/instances')
-    parser.add_argument('--split', type=str, help='Define the train/validation/test split as string separeted with "/".', default='60/20/20')
 
     args = parser.parse_args()
 
     # get arguments
     DEBATE_PATH = args.debate_path
     DATA_PATH = args.data_path
-    split = args.split.split('/')
-
-    train_split = split[0]
-    validation_split = split[1]
-    test_split = split[2]
 
     # iterate over debate files
     for file in os.listdir(DEBATE_PATH):
