@@ -48,50 +48,7 @@ def get_debate_text(debate_path, filename, data_path):
         for sentence in list_sent:
             all_sent.append((sentence, speaker_id))
 
-    # create new folder for the instances files
-    if not os.path.exists(data_path):
-        os.makedirs(data_path)
-
-    filename = filename.strip('.xml')
-
-    # write tuples to files
-    with open(os.path.join(data_path, filename + '.csv'), 'w') as file:
-        csv_out = csv.writer(file)
-
-        for i in range(len(all_sent)-1):
-
-            sent = all_sent[i][0]
-            speaker_id = all_sent[i][1]
-
-            sent_next = all_sent[i+1][0]
-            speaker_id_next = all_sent[i+1][1]
-
-            # label data
-            # check if there was a change in the speaker
-            if speaker_id == speaker_id_next:
-                label = 'same'
-            else:
-                label = 'change'
-
-            # write (sentence, next sentence, label) to file
-            csv_out.writerow((sent, sent_next, label))
-
-    '''
-    # maybe  we need this for later
-    
-    # create new folder for files with speaker_id
-    if not os.path.exists('data/speaker_id'):
-        os.makedirs('data/speaker_id')
-
-    filename = filename.strip('.xml')
-
-    # write tuples with speaker_id to files
-    with open(os.path.join('data/speaker_id', filename + '.csv'), 'w') as file:
-        csv_out = csv.writer(file)
-        for sentence in all_sent:
-            csv_out.writerow(sentence)
-            
-    '''
+    return all_sent
 
 if __name__== "__main__" :
 
@@ -105,9 +62,46 @@ if __name__== "__main__" :
     DEBATE_PATH = args.debate_path
     DATA_PATH = args.data_path
 
-    # iterate over debate files
-    for file in os.listdir(DEBATE_PATH):
-        if file.endswith('.xml'):
-            get_debate_text(DEBATE_PATH, file, DATA_PATH)
+    # create new folder for the instances files
+    if not os.path.exists(DATA_PATH):
+        os.makedirs(DATA_PATH)
 
+
+    same = 0
+    change = 0
+
+    # write sentences to file
+    with open(os.path.join(DATA_PATH, 'debates_sents.csv'), 'w') as csv_file:
+        csv_out = csv.writer(csv_file)
+
+        print("Writing instances to file '%s'." % (DATA_PATH + "debates_sents.csv"))
+
+        # iterate over debate files
+        for file in os.listdir(DEBATE_PATH):
+            if file.endswith('.xml'):
+                all_sent = get_debate_text(DEBATE_PATH, file, DATA_PATH)
+
+                for i in range(len(all_sent) - 1):
+
+                    sent = all_sent[i][0]
+                    speaker_id = all_sent[i][1]
+
+                    sent_next = all_sent[i + 1][0]
+                    speaker_id_next = all_sent[i + 1][1]
+
+                    # label data
+                    # 0: same, 1: change
+                    # check if there was a change in the speaker
+                    if speaker_id == speaker_id_next:
+                        label = 0
+                        same += 1
+                    else:
+                        label = 1
+                        change += 1
+
+                    # write (sentence, next sentence, label) to file
+                    csv_out.writerow((sent, sent_next, label, speaker_id_next))
+
+    print('same: ', same)
+    print('change: ', change)
     print('Wrote instances in files to %s.' % DATA_PATH)
