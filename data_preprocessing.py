@@ -22,7 +22,7 @@ def get_debate_text(debate_path, filename, data_path):
     parser = etree.XMLParser(encoding='ISO-8859-1')
 
     # get root element
-    root = etree.fromstring(debate, parser=utf8_parser)
+    root = etree.fromstring(debate, parser=parser)
 
     # get speech elements
     speech_elems = [child for child in root.getchildren() if child.tag == 'speech']
@@ -57,7 +57,7 @@ if __name__== "__main__" :
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--debate_path', type=str, help='Path to dabates xml files.', required=True)
-    parser.add_argument('--data_path', type=str, help='Name of folder to which the new instances files should be written.', default='data/instances')
+    parser.add_argument('--data_path', type=str, help='Name of folder to which the new instances files should be written.', default='data')
 
     args = parser.parse_args()
 
@@ -78,6 +78,9 @@ if __name__== "__main__" :
         csv_out = csv.writer(csv_file)
 
         print("Writing instances to file '%s'." % (DATA_PATH + "debates_sents.csv"))
+
+        # write (sentence, next sentence, label) to file
+        csv_out.writerow(['sent1', 'sent2', 'class', 'speaker_id'])
 
         # iterate over debate files
         for file in os.listdir(DEBATE_PATH):
