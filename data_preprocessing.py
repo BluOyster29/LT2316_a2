@@ -15,11 +15,14 @@ def get_debate_text(debate_path, filename, data_path):
     '''
 
     # get data from debate
-    with open(os.path.join(debate_path, filename), 'r') as file:
+    with open(os.path.join(debate_path, filename), 'rb') as file:
         debate = file.read()
 
+    # parser
+    parser = etree.XMLParser(encoding='ISO-8859-1')
+
     # get root element
-    root = etree.fromstring(debate)
+    root = etree.fromstring(debate, parser=utf8_parser)
 
     # get speech elements
     speech_elems = [child for child in root.getchildren() if child.tag == 'speech']
@@ -36,7 +39,7 @@ def get_debate_text(debate_path, filename, data_path):
     # get the whole speech text without any tags
     for elem in speech_elems:
         # get clean text
-        elem.text = re.sub(clean, '', etree.tostring(elem))
+        elem.text = re.sub(clean, '', etree.tostring(elem).decode("ISO-8859-1"))
 
         # get speaker id
         speaker_id = elem.attrib['speakerid'] if 'speakerid' in elem.attrib else 'nospeaker'
