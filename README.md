@@ -1,12 +1,22 @@
 # LT2316_a2
 Group Cabbage!
 
+**Preprocessing:**
+
+1.  `data_preprocessing.py`: Reads XML files with debates and saves the splitted sentences to a CSV file with columns *sent1, sent2, label, speaker_id*. The label says if there is a speaker change between the two sentences *(label 1)* or not *(label 0)*.
+   - `--debate_path`: *Path to folder which holds the debate XML files.*
+   - `--data_path`: *Name of folder where the new file should be saved.*
+2. `data_splitting.py`: Splits data into train/validation/test files. *split* defines the size of the training set. The rest is equally divided into a validation and a test set.
+   - `--df_file_path`: *Path to the file containing the data frame.*
+   - `--split`: *Define the train split. The test split will be 1 minus this value.*
+   - `--data_file_path`: *Path to folder to which the new train/validation/test files should be written.*
+
+
+
+
+
 # Current pipeline – feel free to change this!
 
-* data_preprocessing.py: reads XML files and saves them to a csv with columns (sent1, sent2, speakerid?, class)
-* concatenate_dataframe: concatenates debate csv:s into one MEGA dataframe
-* test_train_split: you may guess what this does! (it splits MEGA into training and testing csvs.)
-* ~train_preprocessing.py: evens out the change/same split of the training data, the total amount of sentences is defined at the command line. E.g. train_preprocessing --num_sentences 10000 gets you 5000 sentences with 'change' and 5000 'same'. It can also fetch the vocab, but doesn't write or return anything at this point.~
 * Use torchtext for the above step instead!
 
 # To do (TBD)
