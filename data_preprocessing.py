@@ -57,7 +57,7 @@ if __name__== "__main__" :
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--debate_path', type=str, help='Path to dabates xml files.', required=True)
-    parser.add_argument('--data_path', type=str, help='Name of folder to which the new instances files should be written.', default='data')
+    parser.add_argument('--data_path', type=str, help='Name of folder to which the new file should be written.', default='data')
 
     args = parser.parse_args()
 
@@ -80,7 +80,7 @@ if __name__== "__main__" :
         print("Writing instances to file '%s'." % (DATA_PATH + "debates_sents.csv"))
 
         # write (sentence, next sentence, label) to file
-        csv_out.writerow(['sent1', 'sent2', 'class', 'speaker_id'])
+        csv_out.writerow(['sent1', 'sent2', 'label', 'speaker_id'])
 
         # iterate over debate files
         for file in os.listdir(DEBATE_PATH):

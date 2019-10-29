@@ -22,9 +22,9 @@ def split_data(df, data_path , train_split):
     test_split = (1-train_split)
 
     # group dataframe by classes for balanced splits
-    group_df = df.groupby('class')
+    group_df = df.groupby('label')
     # number of change instances so we can make balanced sets
-    num_change = int(group_df['class'].value_counts()[1])
+    num_change = int(group_df['label'].value_counts()[1])
     classes = [group_df.get_group(0).sample(num_change), group_df.get_group(1)]
 
     # holds all dataframes per label
@@ -50,24 +50,24 @@ def split_data(df, data_path , train_split):
 
     # save train set
     print('Writing out train file to {}.csv.'.format(data_path))
-    train.to_csv(os.path.join(data_path, 'trainfile.csv'), index=False)
+    train.to_csv(os.path.join(data_path, 'train.csv'), index=False)
 
     print('train: ', len(train))
-    print(train['class'].value_counts())
+    print(train['label'].value_counts())
 
     # save test and validation set
     print('Writing out validation and test file to {}.csv.'.format(data_path))
-    val.to_csv(os.path.join(data_path, 'valfile.csv'), index=False)
-    test.to_csv(os.path.join(data_path, 'testfile.csv'), index=False)
+    val.to_csv(os.path.join(data_path, 'validation.csv'), index=False)
+    test.to_csv(os.path.join(data_path, 'test.csv'), index=False)
 
     print('test: ', len(test))
-    print(test['class'].value_counts())
+    print(test['label'].value_counts())
     print('val: ', len(val))
-    print(val['class'].value_counts())
+    print(val['label'].value_counts())
 
 if __name__== "__main__" :
     parser = argparse.ArgumentParser()
-    parser.add_argument('--df_file_path', type=str, help='Path to the file containing the data frame.', required=True)
+    parser.add_argument('--df_file_path', type=str, help='Path to the file containing the data frame.', default='data/debates_sents.csv')
     #parser.add_argument('--num_sentences', type=int, help='The number of sentences to fetch.', default=20000)
     parser.add_argument('--split', type=float, help='Define the train split.', default=0.6)
     parser.add_argument('--data_file_path', type=str, help='Path of folder to which the new train/validation/test files should be written.', default='data')
