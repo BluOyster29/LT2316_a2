@@ -3,8 +3,11 @@
 <u>Linnea Strand:</u>
 
 - data_splitting
+- train_preprocessing
 
 <u>Robert Rhys Thomas:</u>
+
+- train_preprocessing
 
 <u>Megan Klaiber:</u>
 
