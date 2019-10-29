@@ -82,7 +82,7 @@ if __name__== "__main__" :
     print("Encoding!")
     encoded = encode_train_data(train_df, vocab)
     print("Generating Dataloader")
-    train_data = DebatesSet(X_train, Y_train)
+    train_data = DebatesSet(X_train, y_train)
     train_loader = DataLoader(dataset=train_data,
                               batch_size=50,
                               shuffle=True)
