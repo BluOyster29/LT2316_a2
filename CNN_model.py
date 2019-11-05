@@ -15,7 +15,7 @@ class CNNClassifier(nn.Module):
         self.num_classes = num_classes
         self.emb = nn.Embedding.from_pretrained(weights, freeze=True)
 
-        out_channels=num_channels, kernel_size=1),
+        out_channels=num_channels, kernel_size=2),
         nn.ELU(),
         nn.Conv1d(in_channels=num_channels,out_channels=num_channels,
         kernel_size=2, stride=2),
