@@ -4,6 +4,7 @@
 
 - data_splitting
 - train_preprocessing
+- CNN_model
 
 <u>Robert Rhys Thomas:</u>
 
