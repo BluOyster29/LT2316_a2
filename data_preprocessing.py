@@ -151,7 +151,7 @@ def generate_glove_vocab(glove_vocab, vocab):
             new_vocab[word] = weights_matrix[i]
 
     print('Words found: {}'.format(words_found))
-    print('Glove embeddings make up {}%'.format(round(words_found / words_not_found * 100)))
+    print('Glove embeddings make up {}% of vocabulary'.format(round(words_found / words_not_found * 100)))
     int2char = {num : char for char, num in vocab.items()}
     new_vocab_emb = {vocab[char] : num for char, num in new_vocab.items()}
 
@@ -173,7 +173,7 @@ if __name__ == '__main__':
     print('Loading Dataframes')
     train_df, val_df, test_df = read_csv('data/')
     print('Train, Val, Test loaded')
-    train_sent1_tokenized, train_sent2_tokenized, labels = tokenize(train_df[:20])
+    train_sent1_tokenized, train_sent2_tokenized, labels = tokenize(train_df)
     proc_sent1, proc_sent2 = post_processing(train_sent1_tokenized, train_sent2_tokenized)
     vocab = gen_vocab(proc_sent1, proc_sent2)
     glove_vocab_dict = pickle.load(open('pretrained_embeddings/glove/glove_vocab.pkl', 'rb'))
@@ -182,7 +182,12 @@ if __name__ == '__main__':
     encoded_sent2 = encode(proc_sent2, vocab)
     print('Encoding data with embeddings')
     master_set = DebatesSets(encoded_sent1, encoded_sent2, labels)
+    print('Outputting training dataset and dataloader')
+    with open('datasets/train_dataset.pkl', 'wb') as output:
+        pickle.dump(master_set, output)
     master_loader = DataLoader(master_set, batch_size = 1, shuffle=True)
+    with open('datasets/train_dataloadert.pkl', 'wb') as output:
+        pickle.dump(master_loader, output)
 
 
     '''To do:
