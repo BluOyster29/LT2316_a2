@@ -11,7 +11,7 @@ Group Cabbage!
 	- `--df_file_path`: *Path to the file containing the data frame.*
 	- `--split`: *Define the train split. The test split will be 1 minus this value.*
 	- `--data_file_path`: *Path to folder to which the new train/validation/test files should be written.*
-3. 'data_preprocessing' Reads the csv files 'data_splitting' pre/processes the data to be fed into a dataloader. No args at the moment but maybe plan on adding some. After this program then we are ready to start a training loop. 
+3. `data_preprocessing.py` Reads the csv files 'data_splitting' pre/processes the data to be fed into a dataloader. No args at the moment but maybe plan on adding some. After this program then we are ready to start a training loop. 
 
 **Training**
 
