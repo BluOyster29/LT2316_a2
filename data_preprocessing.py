@@ -1,113 +1,197 @@
-from lxml import etree
-import re
-import nltk.data
-import os
-import csv
-import argparse
+import pandas as pd
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+import pickle, re, string
+from Data_set_Loader import DebatesSets
+from torch.utils.data import Dataset, DataLoader
+import numpy as np
+import torch
+from torch.nn.utils.rnn import pad_sequence
 
-def get_debate_text(debate_path, filename, data_path):
-    '''
-    Filter the text of each speech and label pairwise the sentences with 'same' or 'change'.
-    Write the new files to data_path.
-    :param debate_path: path to debate files
-    :param filename: filename of debate
-    :param data_path: path where the new files should be stored
-    '''
+def read_csv(folder):
+    # reads the pre-split csvs and returns pandas dataframes
+    train_df = pd.read_csv(folder + 'split/train.csv')
+    val_df = pd.read_csv(folder + 'split/validation.csv')
+    test_df = pd.read_csv(folder + 'split/test.csv')
+    return train_df, val_df, test_df
 
-    # get data from debate
-    with open(os.path.join(debate_path, filename), 'r') as file:
-        debate = file.read()
-
-    # get root element
-    root = etree.fromstring(debate)
-
-    # get speech elements
-    speech_elems = [child for child in root.getchildren() if child.tag == 'speech']
-
-    # need this for stripping the tags out of the text
-    clean = re.compile('<.*?>')
-
-    # all sentences with speaker id as tupel (sentence, speaker_id)
-    all_sent = []
-
-    # sentence detector to separate text into sentences
-    sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
-
-    # get the whole speech text without any tags
-    for elem in speech_elems:
-        # get clean text
-        elem.text = re.sub(clean, '', etree.tostring(elem))
-
-        # get speaker id
-        speaker_id = elem.attrib['speakerid'] if 'speakerid' in elem.attrib else 'nospeaker'
-
-        # list of sentences in this speech tag
-        list_sent = sent_detector.tokenize(elem.text.strip())
-
-        # put tuple of (sentence, speaker_id) in list
-        for sentence in list_sent:
-            all_sent.append((sentence, speaker_id))
-
-    # create new folder for the instances files
-    if not os.path.exists(data_path):
-        os.makedirs(data_path)
-
-    filename = filename.strip('.xml')
-
-    # write tuples to files
-    with open(os.path.join(data_path, filename + '.csv'), 'w') as file:
-        csv_out = csv.writer(file)
-
-        for i in range(len(all_sent)-1):
-
-            sent = all_sent[i][0]
-            speaker_id = all_sent[i][1]
-
-            sent_next = all_sent[i+1][0]
-            speaker_id_next = all_sent[i+1][1]
-
-            # label data
-            # check if there was a change in the speaker
-            if speaker_id == speaker_id_next:
-                label = 'same'
-            else:
-                label = 'change'
-
-            # write (sentence, next sentence, label) to file
-            csv_out.writerow((sent, sent_next, label))
+def tokenize(data_frame):
 
     '''
-    # maybe  we need this for later
-    
-    # create new folder for files with speaker_id
-    if not os.path.exists('data/speaker_id'):
-        os.makedirs('data/speaker_id')
-
-    filename = filename.strip('.xml')
-
-    # write tuples with speaker_id to files
-    with open(os.path.join('data/speaker_id', filename + '.csv'), 'w') as file:
-        csv_out = csv.writer(file)
-        for sentence in all_sent:
-            csv_out.writerow(sentence)
-            
+    Loops that go through the dataframe and tokenizes the strings
+    Using regex to split hyphenated words and nltk word_tokenize for Tokenizing
+    Input is a data frame
     '''
 
-if __name__== "__main__" :
+    counter = 0
+    sent1_tokenized = []
+    tenp = len(data_frame) / 5
+    ten = 0
+    labels = []
+    print("Fetching Labels")
+    for i in data_frame['label']:
+        labels.append(i)
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--debate_path', type=str, help='Path to dabates xml files.', required=True)
-    parser.add_argument('--data_path', type=str, help='Name of folder to which the new instances files should be written.', default='data/instances')
+    print("Tokenizing sentence 1")
+    for i in data_frame['sent1']:
+        if counter % tenp == 0:
+            print(str(ten) + '% tokenized')
+            ten += 10
+        sent1_tokenized.append([re.sub('-',' ',x.lower()) for x in word_tokenize(i)])
+        counter +=1
 
-    args = parser.parse_args()
+    sent2_tokenized = []
+    counter = 0
+    print("Tokenizing sentence 2")
+    for i in data_frame['sent2']:
+        if counter % tenp == 0:
+            print(str(ten) + '% tokenized')
+            ten += 10
+        sent2_tokenized.append([re.sub('-',' ',x.lower()) for x in word_tokenize(i)])
+        counter +=1
 
-    # get arguments
-    DEBATE_PATH = args.debate_path
-    DATA_PATH = args.data_path
+    print("Tokens Generated")
 
-    # iterate over debate files
-    for file in os.listdir(DEBATE_PATH):
-        if file.endswith('.xml'):
-            get_debate_text(DEBATE_PATH, file, DATA_PATH)
+    return sent1_tokenized, sent2_tokenized, labels
 
-    print('Wrote instances in files to %s.' % DATA_PATH)
+def remove_stopwords(tokenized_sent):
+    '''
+    from a tokenised sentence the loop removes any left over punctuation
+    or stop words and some numbers. can be expanded with further tokens
+    to remove.
+    '''
+    stop_words = stopwords.words('english')
+    stop_words += string.punctuation
+    for i in tokenized_sent:
+        if i in stop_words or type(i) == int:
+            tokenized_sent.remove(i)
+
+    return tokenized_sent
+
+def post_processing(sent1_tokenized, sent2_tokenized):
+    '''
+    Master post processing script for remobing stop words
+    '''
+
+    counter = 0
+    ten = 0
+    tenper = len(sent1_tokenized) / 5
+
+    print('Post Processing sentence 1')
+    for i in sent1_tokenized:
+        counter += 1
+        if counter % tenper == 0:
+            print(str(ten) + '% processed')
+            ten += 10
+        i = remove_stopwords(i)
+
+    print('Post Processing sentence 2')
+    counter = 0
+    for i in sent2_tokenized:
+        counter += 1
+        if counter % tenper == 0:
+            print(str(ten) + '% processed')
+            ten += 10
+        i = remove_stopwords(i)
+
+    print('Finished')
+
+    return sent1_tokenized, sent2_tokenized
+
+def gen_vocab(sent1_tokenz, sent2_tokenz):
+
+    '''
+    Generates a vocab, word to index in vocab
+    '''
+
+    print('Generating Vocab')
+    raw_text = []
+    for i in sent1_tokenz:
+        raw_text += i
+    for i in sent2_tokenz:
+        raw_text += i
+
+    int2char = dict(enumerate(set(raw_text)))
+    vocab = {char : num for num, char in int2char.items()}
+    return vocab
+
+def create_df(sent1,sent2,labels):
+
+    '''
+    script for outputting csv which is the post processed dataframe
+    '''
+
+    df = pd.DataFrame(data=list(zip(sent1,sent2,labels)), columns=['sent1','sent2','labels'])
+    df.to_csv('data/processed_training.csv')
+    return df
+
+def generate_glove_vocab(glove_vocab, vocab):
+
+    '''
+    creates a vocab dictionary using glove embeddings
+    input: dictionary containing glove embeddings
+           index vocab
+    output: vocab matching words to glove embeddings
+    code adapted from:
+        https://medium.com/@martinpella/how-to-use-pre-trained-word-embeddings-in-pytorch-71ca59249f76
+    '''
+    print('Generating Glove Embeddings')
+    new_vocab = {}
+    weights_matrix=np.zeros((len(vocab), 50))
+    words_found = 0
+    words_not_found = 0
+    for i, word in enumerate(vocab):
+        try:
+            new_vocab[word] = glove_vocab[word]
+            weights_matrix[i] = glove_vocab[word]
+            words_found += 1
+        except KeyError:
+            weights_matrix[i] = np.random.normal(scale=0.6, size=(50,))
+            words_not_found +=1
+            new_vocab[word] = weights_matrix[i]
+
+    print('Words found: {}'.format(words_found))
+    print('Glove embeddings make up {}% of vocabulary'.format(round(words_found / words_not_found * 100)))
+    int2char = {num : char for char, num in vocab.items()}
+    new_vocab_emb = {vocab[char] : num for char, num in new_vocab.items()}
+
+    return new_vocab_emb
+
+def encode(sent1,vocab):
+    '''
+    Code that encodes words to vocab integers
+    '''
+    encoded_matrix = []
+    for i in sent1:
+        encoded_vector = []
+        encoded_vector.append(torch.LongTensor([vocab[x] for x in i[:30]]))
+        encoded_matrix += encoded_vector
+
+    return pad_sequence(encoded_matrix, batch_first=True, padding_value=0)
+
+if __name__ == '__main__':
+    print('Loading Dataframes')
+    train_df, val_df, test_df = read_csv('data/')
+    print('Train, Val, Test loaded')
+    train_sent1_tokenized, train_sent2_tokenized, labels = tokenize(train_df)
+    proc_sent1, proc_sent2 = post_processing(train_sent1_tokenized, train_sent2_tokenized)
+    vocab = gen_vocab(proc_sent1, proc_sent2)
+    glove_vocab_dict = pickle.load(open('pretrained_embeddings/glove/glove_vocab.pkl', 'rb'))
+    embeddings = generate_glove_vocab(glove_vocab_dict, vocab)
+    encoded_sent1 = encode(proc_sent1,vocab)
+    encoded_sent2 = encode(proc_sent2, vocab)
+    print('Encoding data with embeddings')
+    master_set = DebatesSets(encoded_sent1, encoded_sent2, labels)
+    print('Outputting training dataset and dataloader')
+    with open('datasets/train_dataset.pkl', 'wb') as output:
+        pickle.dump(master_set, output)
+    master_loader = DataLoader(master_set, batch_size = 1, shuffle=True)
+    with open('datasets/train_dataloadert.pkl', 'wb') as output:
+        pickle.dump(master_loader, output)
+
+
+    '''To do:
+                add args for batch_size
+                add tokenizing args
+                args for file location
+    '''
