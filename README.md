@@ -17,10 +17,9 @@ Group Cabbage!
 
 # Current pipeline – feel free to change this!
 
-* Maybe Torchtext in the future
-* Fix Data splitting, at the moment the sizes are not ideal 
-* Training
-* Evaluating 
+* data_preprocessing
+* train network
+* evaluating 
 
 # To do (TBD)
 1. Get vocab out of the training data - Done!
