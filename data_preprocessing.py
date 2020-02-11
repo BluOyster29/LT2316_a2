@@ -1,19 +1,20 @@
-import pandas as pd
+import pandas as pd, argparse, pickle, re, string, numpy as np, torch, random
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
-import pickle, re, string
 from Data_set_Loader import DebatesSets
 from torch.utils.data import Dataset, DataLoader
-import numpy as np
-import torch
 from torch.nn.utils.rnn import pad_sequence
+from tqdm import tqdm
 
-def read_csv(folder):
-    # reads the pre-split csvs and returns pandas dataframes
-    train_df = pd.read_csv(folder + 'split/train.csv')
-    val_df = pd.read_csv(folder + 'split/validation.csv')
-    test_df = pd.read_csv(folder + 'split/test.csv')
-    return train_df, val_df, test_df
+def get_args():
+    parser = argparse.ArgumentParser()
+    
+    parser.add_argument('--training_data', dest='train', type=str, help='Path to training data csv format', default='data/train.csv')
+    parser.add_argument('--testing_data', type=str, dest='test',help='Path for testing data', default='data/testing.csv')
+    parser.add_argument('--batch_size', dest='batch_size', type=int, help='Batch size for training', default=100)
+    args = parser.parse_args()
+        
+    return args
 
 def tokenize(data_frame):
 
@@ -23,32 +24,20 @@ def tokenize(data_frame):
     Input is a data frame
     '''
 
-    counter = 0
     sent1_tokenized = []
-    tenp = len(data_frame) / 5
-    ten = 0
     labels = []
     print("Fetching Labels")
-    for i in data_frame['label']:
+    for i in data_frame['class']:
         labels.append(i)
 
     print("Tokenizing sentence 1")
-    for i in data_frame['sent1']:
-        if counter % tenp == 0:
-            print(str(ten) + '% tokenized')
-            ten += 10
+    for i in tqdm(data_frame['sent_1']):
         sent1_tokenized.append([re.sub('-',' ',x.lower()) for x in word_tokenize(i)])
-        counter +=1
 
     sent2_tokenized = []
-    counter = 0
     print("Tokenizing sentence 2")
-    for i in data_frame['sent2']:
-        if counter % tenp == 0:
-            print(str(ten) + '% tokenized')
-            ten += 10
+    for i in tqdm(data_frame['sent_2']):
         sent2_tokenized.append([re.sub('-',' ',x.lower()) for x in word_tokenize(i)])
-        counter +=1
 
     print("Tokens Generated")
 
@@ -73,27 +62,15 @@ def post_processing(sent1_tokenized, sent2_tokenized):
     Master post processing script for remobing stop words
     '''
 
-    counter = 0
-    ten = 0
-    tenper = len(sent1_tokenized) / 5
-
     print('Post Processing sentence 1')
-    for i in sent1_tokenized:
-        counter += 1
-        if counter % tenper == 0:
-            print(str(ten) + '% processed')
-            ten += 10
+    for i in tqdm(sent1_tokenized):
         i = remove_stopwords(i)
 
     print('Post Processing sentence 2')
-    counter = 0
-    for i in sent2_tokenized:
-        counter += 1
-        if counter % tenper == 0:
-            print(str(ten) + '% processed')
-            ten += 10
-        i = remove_stopwords(i)
 
+    for i in tqdm(sent2_tokenized):
+        i = remove_stopwords(i)
+        
     print('Finished')
 
     return sent1_tokenized, sent2_tokenized
@@ -164,34 +141,56 @@ def encode(sent1,vocab):
     encoded_matrix = []
     for i in sent1:
         encoded_vector = []
-        encoded_vector.append(torch.LongTensor([vocab[x] for x in i[:30]]))
-        encoded_matrix += encoded_vector
+        for x in i[:30]:
+            try:
+                encoded_vector.append(vocab[x])
+            except:
+                encoded_vector.append(random.randint(0, len(vocab)))
+                                     
+        encoded_matrix.append(torch.LongTensor(encoded_vector))
 
     return pad_sequence(encoded_matrix, batch_first=True, padding_value=0)
 
-if __name__ == '__main__':
+def process(dataframe, train, vocab):
+    
+    sent1_tokenized, sent2_tokenized, labels = tokenize(dataframe)
+    #proc_sent1, proc_sent2 = post_processing(sent1_tokenized, sent2_tokenized)
+    if train == True:
+        vocab = gen_vocab(sent1_tokenized, sent2_tokenized)
+        
+    encoded_sent1 = encode(sent1_tokenized,vocab)
+    encoded_sent2 = encode(sent2_tokenized, vocab)
+    dataset = DebatesSets(encoded_sent1, encoded_sent2, labels)
+    
+    if train == True:
+        return dataset, vocab
+    return dataset
+
+def main(args):
     print('Loading Dataframes')
-    train_df, val_df, test_df = read_csv('data/')
-    print('Train, Val, Test loaded')
-    train_sent1_tokenized, train_sent2_tokenized, labels = tokenize(train_df)
-    proc_sent1, proc_sent2 = post_processing(train_sent1_tokenized, train_sent2_tokenized)
-    vocab = gen_vocab(proc_sent1, proc_sent2)
-    glove_vocab_dict = pickle.load(open('pretrained_embeddings/glove/glove_vocab.pkl', 'rb'))
-    embeddings = generate_glove_vocab(glove_vocab_dict, vocab)
-    encoded_sent1 = encode(proc_sent1,vocab)
-    encoded_sent2 = encode(proc_sent2, vocab)
-    print('Encoding data with embeddings')
-    master_set = DebatesSets(encoded_sent1, encoded_sent2, labels)
-    print('Outputting training dataset and dataloader')
-    with open('datasets/train_dataset.pkl', 'wb') as output:
-        pickle.dump(master_set, output)
-    master_loader = DataLoader(master_set, batch_size = 1, shuffle=True)
-    with open('datasets/train_dataloadert.pkl', 'wb') as output:
-        pickle.dump(master_loader, output)
+    train_df = pd.read_csv(args.train)
+    test_df = pd.read_csv(args.test)
+    print('Train, Test loaded')
+    train_dataset, vocab = process(train_df, train=True, vocab=None)
+    test_dataset = process(test_df, train=False, vocab=vocab)
+
+    #glove_vocab_dict = pickle.load(open('pretrained_embeddings/glove/glove_vocab.pkl', 'rb'))
+    #embeddings = generate_glove_vocab(glove_vocab_dict, vocab)
+   
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+    with open('dataloaders{}pkl'.format(args.train[4:-3]), 'wb') as output:
+        print('Pickling Training dataloader to: {}'.format(output))
+        pickle.dump(train_loader, output)
+        
+    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=True)
+    with open('dataloaders{}pkl'.format(args.test[4:-3]), 'wb') as output:
+        print('Pickling Testing Dataloader to: {}'.format(output))
+        pickle.dump(test_loader, output)
+        
+if __name__ == '__main__':
+    args = get_args()
+    main(args)
+    
 
 
-    '''To do:
-                add args for batch_size
-                add tokenizing args
-                args for file location
-    '''
+
