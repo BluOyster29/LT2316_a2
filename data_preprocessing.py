@@ -12,6 +12,7 @@ def get_args():
     parser.add_argument('--training_data', dest='train', type=str, help='Path to training data csv format', default='data/train.csv')
     parser.add_argument('--testing_data', type=str, dest='test',help='Path for testing data', default='data/testing.csv')
     parser.add_argument('--batch_size', dest='batch_size', type=int, help='Batch size for training', default=100)
+    parser.add_argument('--output', type=str, dest='output_dl',help='Path for testing data', default='dataloaders/')
     args = parser.parse_args()
         
     return args
@@ -27,16 +28,16 @@ def tokenize(data_frame):
     sent1_tokenized = []
     labels = []
     print("Fetching Labels")
-    for i in data_frame['class']:
+    for i in data_frame['label']:
         labels.append(i)
 
     print("Tokenizing sentence 1")
-    for i in tqdm(data_frame['sent_1']):
+    for i in tqdm(data_frame['sent1']):
         sent1_tokenized.append([re.sub('-',' ',x.lower()) for x in word_tokenize(i)])
 
     sent2_tokenized = []
     print("Tokenizing sentence 2")
-    for i in tqdm(data_frame['sent_2']):
+    for i in tqdm(data_frame['sent2']):
         sent2_tokenized.append([re.sub('-',' ',x.lower()) for x in word_tokenize(i)])
 
     print("Tokens Generated")
@@ -173,17 +174,21 @@ def main(args):
     print('Train, Test loaded')
     train_dataset, vocab = process(train_df, train=True, vocab=None)
     test_dataset = process(test_df, train=False, vocab=vocab)
-
+    print(test_dataset[:3])
     #glove_vocab_dict = pickle.load(open('pretrained_embeddings/glove/glove_vocab.pkl', 'rb'))
     #embeddings = generate_glove_vocab(glove_vocab_dict, vocab)
    
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-    with open('dataloaders{}pkl'.format(args.train[4:-3]), 'wb') as output:
+    
+    with open('vocab/vocab.pkl', 'wb') as output:
+        pickle.dump(vocab, output)
+    
+    with open('dataloaders/training.pkl'.format(args.train[4:-3]), 'wb') as output:
         print('Pickling Training dataloader to: {}'.format(output))
         pickle.dump(train_loader, output)
         
     test_loader = DataLoader(test_dataset, batch_size=1, shuffle=True)
-    with open('dataloaders{}pkl'.format(args.test[4:-3]), 'wb') as output:
+    with open('dataloaders/testing.pkl'.format(args.test[4:-3]), 'wb') as output:
         print('Pickling Testing Dataloader to: {}'.format(output))
         pickle.dump(test_loader, output)
         
@@ -191,6 +196,5 @@ if __name__ == '__main__':
     args = get_args()
     main(args)
     
-
 
 
