@@ -101,7 +101,13 @@ def create_df(sent1,sent2,labels):
 
     df = pd.DataFrame(data=list(zip(sent1,sent2,labels)), columns=['sent1','sent2','labels'])
     df.to_csv('data/processed_training.csv')
-    return df
+    
+    # return the max len (=len of longest sequence), to be used for padding
+    max1 = df.sent1.str.len().max()
+    max2 = df.sent2.str.len().max()
+    max_len = max([max1, max2])
+    
+    return df, max_len
 
 def generate_glove_vocab(glove_vocab, vocab):
 
@@ -133,7 +139,7 @@ def generate_glove_vocab(glove_vocab, vocab):
     int2char = {num : char for char, num in vocab.items()}
     new_vocab_emb = {vocab[char] : num for char, num in new_vocab.items()}
 
-    return new_vocab_emb
+    return new_vocab_emb, int2char
 
 def encode(sent1,vocab):
     '''
