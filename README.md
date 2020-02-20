@@ -11,19 +11,28 @@ Group Cabbage!
 	- `--df_file_path`: *Path to the file containing the data frame.*
 	- `--split`: *Define the train split. The test split will be 1 minus this value.*
 	- `--data_file_path`: *Path to folder to which the new train/validation/test files should be written.*
-3. `data_preprocessing.py` Reads the csv files 'data_splitting' pre/processes the data to be fed into a dataloader. No args at the moment but maybe plan on adding some. After this program then we are ready to start a training loop. 
+3. `data_preprocessing.py` Reads the csv files 'data_splitting' pre/processes the data to be fed into a dataloader. Dataloader is then outputted to dataloader folder.
+        - `--training_data`: path to training data 
+	- `--testing_data`: path to testing data 
+	- `--batch_size`: int to record batch size of data
+	- `--output`: path to dataloader folder
 
 **Training**
 
-# Current pipeline – feel free to change this!
+4. `train.py`: Currently trains rnn model and outputs the trained model to folder 
+        - `-tr`: path to training dataloader
+        - `-B`: batch size 
+	- `-E`: Number of epochs for training 
+	- `-M`: Model type, currently only rnn is working 
+	- `-o`: Output path for trained model
+	
+**Testing**
 
-* data_preprocessing
-* train network
-* evaluating 
+5. `test.py`: Testing script, so far just for the rnn script. Prints to the screen the accuracy of the model
 
 # To do (TBD)
 1. Get vocab out of the training data - Done!
-2. Convert sents to their integer representation and possibly GloVe or word2vec embeddings - Done - Can use word2vec too if we like 
+2. Convert sents to their integer representation and possibly GloVe or word2vec embeddings - Done - Can use word2vec too if we like
 3. (up for discussion) Create a neat DataLoader-like object for fetching instances - Done! 
 4. Training loop 
 5. Feed into network!
