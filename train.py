@@ -16,10 +16,6 @@ def get_args():
                         help="Define the batch size for training")
     parser.add_argument("-E", "--nr_epochs", dest='nr_epochs', type=int,
                         default=2, help="Define the number of training epochs")
-    parser.add_argument("-G", "--use_gpu", dest='use_gpu', type=str,
-                        help='Use GPU or CPU for training (y/n)', default="y")
-    parser.add_argument("-L", "--loss_mode", dest='loss_mode', type=int,
-                        help='Choose loss mode', default="1")
     parser.add_argument("-M", "--model_type", dest='model_type', type=str,
                         help='cnn or rnn')
     parser.add_argument("-o", "--model_output", dest='model_output', type=str,
@@ -36,11 +32,9 @@ def load_dataloaders(filepath):
 
     return dataloaders
 
-def save_model(model, batch_size, nr_epochs, model_name):
-    directory = 'trained_models/'
-    if os.path.exists(directory) == False:
-        os.mkdir(directory)
-    torch.save(model.state_dict(), 'trained_models/{}.pt'.format(model_name))
+def save_model(model, path):
+    
+    torch.save(model.state_dict(), path)
 
 def get_vocab(path):
     with open(path, 'rb')as file:
@@ -98,8 +92,8 @@ def main(args):
     print('Model Generated')
     print('Training Model with {} batches over {} epochs on {}'.format(batch_size,nr_of_epochs, device))
     trained_model = train(model, training, vocab_size, device, nr_of_epochs, batch_size)
-    print('Outputting model to trained_model/{}.pt'.format(args.model_output))
-    save_model(trained_model,batch_size,nr_of_epochs, args.model_output)
+    print('Outputting model to {}'.format(args.model_output))
+    save_model(trained_model, args.model_output)
     return trained_model
 
 if __name__ == '__main__':

@@ -19,7 +19,7 @@ def get_args():
     args = parser.parse_args()
     return args
 
-def test_model(model, testing_dl):
+def test_model(model, testing_dl, args):
     device = 'cuda:01'
     count = 0
     correct = 0
@@ -29,7 +29,7 @@ def test_model(model, testing_dl):
 
         sent_1 = i[0][0].to(device)
         
-        if sent_1.shape != torch.Tensor(200,30).shape:
+        if sent_1.shape != torch.Tensor(args.batch_size,30).shape:
             continue
             
         sent_2 = i[0][1].to(device)
@@ -75,7 +75,7 @@ def main(args):
     testing_dl = load_dataloaders(args.test_loader)
     vocab = get_vocab('vocab/vocab.pkl')
     trained_model = load_model(args.trained_model, vocab)
-    accuracy = test_model(trained_model, testing_dl)
+    accuracy = test_model(trained_model, testing_dl, args)
     print('Accuracy for model: {}'.format(accuracy))
     
 if __name__ == '__main__':
