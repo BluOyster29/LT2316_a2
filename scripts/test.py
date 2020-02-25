@@ -72,10 +72,11 @@ def get_vocab(path):
     return vocab
 
 def main(args):
+    print(args.test_loader[:10])
     testing_dl = load_dataloaders(args.test_loader)
-    vocab = get_vocab('{}/vocab.pkl'.format(args.test_loader[:25]))
-    trained_model = load_model(args.trained_model, vocab)
-    accuracy = test_model(trained_model, testing_dl, args)
+    #vocab = get_vocab('{}/vocab.pkl'.format(args.test_loader[:15]))
+    #trained_model = load_model(args.trained_model, vocab)
+    #accuracy = test_model(trained_model, testing_dl, args)
     print('Accuracy for model: {}'.format(accuracy))
     
 if __name__ == '__main__':
